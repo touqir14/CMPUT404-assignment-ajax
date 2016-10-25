@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# Copyright 2013 Abram Hindle
+# Copyright 2016 Touqir Sajed, Abram Hindle
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@
 import flask
 from flask import Flask, request
 import json
+from flask import render_template
+
 app = Flask(__name__)
 app.debug = True
 
@@ -49,10 +51,16 @@ class World:
         self.space = dict()
 
     def get(self, entity):
-        return self.space.get(entity,dict())
+        return self.space.get(entity,dict()) 
     
     def world(self):
         return self.space
+
+    def setWorld(self, world):
+        self.space=world
+
+    def getWorld(self):
+        return json.dumps(self.space)
 
 # you can test your webservice from the commandline
 # curl -v   -H "Content-Type: appication/json" -X PUT http://127.0.0.1:5000/entity/X -d '{"x":1,"y":1}' 
@@ -74,27 +82,47 @@ def flask_post_json():
 @app.route("/")
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    return app.send_static_file('index.html')
+
+@app.route("/json2.js")
+def getJson2():
+    return app.send_static_file('json2.js')
 
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
     '''update the entities via this interface'''
-    return None
+    entities=flask_post_json()
+    print entities
+    for key in entities.keys():
+        value=entities[key]
+        myWorld.update(entity, key, value)
 
-@app.route("/world", methods=['POST','GET'])    
+    if request.method == 'PUT':    
+        return json.dumps(entities) # PUT returns the object that was put
+    else:
+        return myWorld.getWorld()
+
+@app.route("/world", methods=['POST','GET','PUT'])    
 def world():
     '''you should probably return the world here'''
-    return None
+    if request.method == 'GET':    
+        return json.dumps(myWorld.world())
+    elif request.method == 'POST' or request.method == 'PUT':
+        world_new = flask_post_json()
+        myWorld.setWorld(world_new)
+        return myWorld.getWorld()
 
-@app.route("/entity/<entity>")    
+
+@app.route("/entity/<entity>", methods=['GET'])    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
+    return json.dumps(myWorld.get(entity))
 
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    return None
+    myWorld.clear()
+    return "{}"
 
 if __name__ == "__main__":
     app.run()
