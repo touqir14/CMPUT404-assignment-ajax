@@ -92,7 +92,7 @@ def getJson2():
 def update(entity):
     '''update the entities via this interface'''
     entities=flask_post_json()
-    print entities
+    # print entities
     for key in entities.keys():
         value=entities[key]
         myWorld.update(entity, key, value)
